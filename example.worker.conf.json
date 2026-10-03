@@ -6,7 +6,7 @@
 	"message_queue": {
 		"host": "localhost",
 		"port": 5672,
-		"user": "guest",
+		"user": "nexxus",
 		"password": "guest",
     "compression": {
       "enabled": true,

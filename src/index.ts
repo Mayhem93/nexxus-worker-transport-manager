@@ -10,9 +10,10 @@ import type { NexxusDatabaseAdapter } from '@mayhem93/nexxus-database-lib';
 import type { NexxusMessageQueueAdapter } from '@mayhem93/nexxus-message-queue-lib';
 
 let logger: NexxusBaseLogger<any> | undefined;
+let configManager: NexxusConfigManager | undefined;
 
 (async () => {
-  const configManager = new NexxusConfigManager();
+  configManager = new NexxusConfigManager();
 
   // Register the framework-fixed services (API + Redis are not pluggable)
   // so we can read `app.logger` / `app.database` / `app.message_queue`.
@@ -45,16 +46,10 @@ let logger: NexxusBaseLogger<any> | undefined;
   const redis = new NexxusRedis({ configManager, logger });
   const worker   = new NexxusTransportManagerWorker({ configManager, logger, database: db, messageQueue: mq, redis });
 
-  await db.connect();
-  await mq.connect();
-  await redis.init();
   await worker.init();
 
   const shutdown = (): void => {
     worker.close();
-    mq.disconnect();
-    db.disconnect();
-    redis.close();
   };
 
   process.once('SIGTERM', shutdown);
@@ -65,7 +60,7 @@ let logger: NexxusBaseLogger<any> | undefined;
   if (logger) {
     logger.emerg(message, 'NxxTransportManager');
   } else {
-    console.error(message);
+    configManager!.fallbackLogger.emerg(`Fatal error: ${message}`, { error: message }, 'NxxTransportManager');
   }
 
   if (err instanceof FatalErrorException) {
